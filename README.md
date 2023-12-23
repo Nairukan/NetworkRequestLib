@@ -1,0 +1,2 @@
+# NetworkRequestLib
+Lib covering libCurl
