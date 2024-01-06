@@ -192,8 +192,10 @@ namespace request{
         curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res);
         curl_easy_getinfo(handle, CURLINFO_TOTAL_TIME, &secs);
         std::cout << "Time " << secs << "-s\n";
+        if (res==302){std::cout<<"Redirect to " << metadata.second["Location"] << "\n"; return Request(handle, metadata.first["Location"], metadata.first, metadata.second, responce, this->isPost).exec();};
         if (res!=200 || Request_count_max_ms-secs*1000<Request_count_max_ms*0.01){
             std::cout << res << " Repeat Request\n";
+
             if ((secs<500 && res!=200)){ std::ofstream ou("log.txt"); ou << str; ou.close(); std::this_thread::sleep_for(std::chrono::seconds(10));}
             if (res==502){
                 std::cout << format("URL: {}\nBODY: {}\n", URL, responce->str());
