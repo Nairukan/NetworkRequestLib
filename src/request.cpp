@@ -76,21 +76,68 @@ namespace request{
     }
 
     Request::Request(CURL* handle, string URL,
+                     map<string, string>& MapParams,
                      map<string, string>& MapHeaders,
-                     map<string, string>& MapCookies, stringstream* responce, bool isPost) :
+                     map<string, string>& MapCookies, stringstream* responce, string Metod):
         handle(handle),
         responce(responce),
         metadata({std::ref(MapHeaders), std::ref(MapCookies)}),
         URL(URL),
-        isPost(isPost)
+        Metod(Metod)
     {
+        if (MapParams.size())
+        {
+            stringstream adding;
+            adding << "?" << MapParams.begin()->first << (MapParams.begin()->second != "" ? ("="+MapParams.begin()->second) : "");
+            for (map<string,string>::iterator it=++MapParams.begin(); it!=MapParams.end(); ++it){
+                adding << "&" << it->first << (it->second != "" ? ("="+it->second) : "");
+            }
+            this->URL.append(adding.str());
+        }
+        std::cout << "URL: "<< URL << "\n";
+        _init();
+    }
 
 
 
-        if (isPost)
-            curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "POST");
-        else
-            curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "GET");
+    Request::Request (CURL* handle, string URL,
+                     map<string, string>& MapParams,
+                     map<string, string>& MapHeaders,
+                     map<string, string>& MapCookies, stringstream* responce, bool isPost):
+        handle(handle),
+        responce(responce),
+        metadata({std::ref(MapHeaders), std::ref(MapCookies)}),
+        URL(URL),
+        Metod(isPost ? "POST" : "GET")
+    {
+        if (MapParams.size())
+        {
+            stringstream adding;
+            adding << "?" << MapParams.begin()->first << (MapParams.begin()->second != "" ? ("="+MapParams.begin()->second) : "");
+            for (map<string,string>::iterator it=++MapParams.begin(); it!=MapParams.end(); ++it){
+                adding << "&" << it->first << (it->second != "" ? ("="+it->second) : "");
+            }
+            this->URL.append(adding.str());
+        }
+        std::cout << "URL: "<< URL << "\n";
+        _init();
+    }
+
+    Request::Request(CURL* handle, string URL,
+            map<string, string>& MapHeaders,
+            map<string, string>& MapCookies, stringstream* buffer, bool isPost):
+        handle(handle),
+        responce(responce),
+        metadata({std::ref(MapHeaders), std::ref(MapCookies)}),
+        URL(URL),
+        Metod(isPost ? "POST" : "GET")
+    {
+        _init();
+    }
+
+    void Request::_init(){
+
+        curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, Metod.c_str());
         curl_easy_setopt(handle, CURLOPT_URL, URL.c_str());
         curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(handle, CURLOPT_DEFAULT_PROTOCOL, "https");
@@ -102,12 +149,12 @@ namespace request{
 
         if (headers!=NULL) curl_slist_free_all(headers);
         headers = NULL;
-        for (const auto &now : MapHeaders){
+        for (const auto &now : metadata.first){
             headers = curl_slist_append(headers, (now.first+": "+now.second).c_str());
         }
         //if (responce!=nullptr) str=responce->str();
         stringstream cookies;
-        for (const auto &now: MapCookies){
+        for (const auto &now: metadata.second){
             cookies << now.first << "=" << now.second << "; ";
         }
         if (cookies.str().length())
@@ -120,8 +167,8 @@ namespace request{
         curl_easy_setopt(handle, CURLOPT_HEADERDATA, &metadata);
         curl_easy_setopt(handle, CURLOPT_AUTOREFERER, 1L);
 
-        if (MapHeaders.find("User-Agent")!=MapHeaders.end())
-            curl_easy_setopt(handle, CURLOPT_USERAGENT, (MapHeaders)["User-Agent"].c_str());
+        if (metadata.first.find("User-Agent")!=metadata.first.end())
+            curl_easy_setopt(handle, CURLOPT_USERAGENT, (metadata.first)["User-Agent"].c_str());
 
         //curl_easy_setopt(handle, CURLOPT_MAXREDIRS , 100L);
         //curl_easy_setopt(handle, CURLOPT_COOKIEFILE, "")
@@ -145,13 +192,14 @@ namespace request{
         some=responce->str();
         data=some.c_str();
 
-        if (!responce->str().empty() && isPost){
+        if (!responce->str().empty() && Metod=="POST"){
             curl_easy_setopt(handle, CURLOPT_POSTFIELDS, data);
         }
         //curl_easy_setopt(handle, CURLOPT_TCP_KEEPALIVE, Request_count_max_ms);
-
-        curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, Request_count_max_ms);
-
+        if (TimeLimited)
+            curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, Request_count_max_ms);
+        else
+            curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, -1);
     }
 
     Request& Request::exec(map<string, string>& MapHeaders, map<string, string>& MapCookies){
@@ -192,14 +240,44 @@ namespace request{
         curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res);
         curl_easy_getinfo(handle, CURLINFO_TOTAL_TIME, &secs);
         std::cout << "Time " << secs << "-s\n";
-        if (res==302){std::cout<<"Redirect to " << metadata.second["Location"] << "\n"; return Request(handle, metadata.first["Location"], metadata.first, metadata.second, responce, this->isPost).exec();};
-        if (res!=200 || Request_count_max_ms-secs*1000<Request_count_max_ms*0.01){
+        if (res==302){map<string,string> t; std::cout<<"Redirect to " << metadata.second["Location"] << "\n"; return Request(handle, metadata.first["Location"], t, metadata.first, metadata.second, responce, this->Metod).exec();};
+
+        if ((request::RepitRequestInBad && res!=200) || (request::TimeLimited && Request_count_max_ms-secs*1000<Request_count_max_ms*0.01)){
             std::cout << res << " Repeat Request\n";
 
             if ((secs<500 && res!=200)){ std::ofstream ou("log.txt"); ou << str; ou.close(); std::this_thread::sleep_for(std::chrono::seconds(10));}
             if (res==502){
                 std::cout << format("URL: {}\nBODY: {}\n", URL, responce->str());
                 throw "502";
+            }
+            if (res==400){
+                std::cout << "Some 400 code\n";
+                string finding=string("{\"message\":\"checkpoint_required\",\"checkpoint_url\":\"");
+                if (str.size() > finding.length() && str.substr(0, finding.length())==finding){
+                    string checkpoint_link=str.substr(finding.length());
+                    finding="\",\"lock\":false,\"flow_render_type\":0,\"status\":\"fail\"}";
+                    if (checkpoint_link.substr(checkpoint_link.length()-finding.length(), finding.length())==finding){
+                        checkpoint_link=checkpoint_link.substr(0, checkpoint_link.length()-finding.length());
+                        std::cout<<checkpoint_link << "\n"; std::cout.flush();
+                        map<string,string> t;
+                        Request(handle, checkpoint_link, t, metadata.first, metadata.second, responce, string("POST")).exec();
+                        std::cout << "Checkpoint complete\n"; std::cout.flush();
+                        return exec();
+                    }else{
+
+                        finding="\",\"lock\":true,\"flow_render_type\":0,\"status\":\"fail\"}";
+                        if (checkpoint_link.substr(checkpoint_link.length()-finding.length(), finding.length())==finding){
+                            checkpoint_link=checkpoint_link.substr(0, checkpoint_link.length()-finding.length());
+                            std::cout<<checkpoint_link << "\n"; std::cout.flush();
+                            //Request(handle, checkpoint_link, metadata.first, metadata.second, responce, true).exec();
+                            std::cout << "Checkpoint complete\n"; std::cout.flush();
+                            return exec();
+                        }else
+                            std::cout << "I have a problem 2"; std::cin >> finding;
+                    }
+                }else{
+                    std::cout << "I have a problem 1\n " << str.substr(0, finding.length()); std::cout.flush(); std::cin >> finding;
+                }
             }
             return exec();
         }

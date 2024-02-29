@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 
 project(NetworkRequestLib LANGUAGES CXX)
 
+
 if (NOT CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     message(STATUS "This project has a top-level one called [${CMAKE_PROJECT_NAME}]")
 else()
@@ -10,7 +11,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(PROJECT_VERSION 1.0)
+set(PROJECT_VERSION 1.1)
 
 find_package(CURL REQUIRED)
 include_directories(${CURL_INCLUDE_DIR})
@@ -19,12 +20,12 @@ include_directories(${CURL_INCLUDE_DIR})
 
 add_library(${PROJECT_NAME} SHARED)
 
-
 target_link_libraries(NetworkRequestLib ${CURL_LIBRARIES})
 
 target_sources(${PROJECT_NAME}
     PRIVATE
         src/request.cpp
+        include/request.h
 )
 
 target_include_directories(${PROJECT_NAME}
