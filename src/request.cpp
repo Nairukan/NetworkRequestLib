@@ -94,7 +94,7 @@ namespace request{
             }
             this->URL.append(adding.str());
         }
-        std::cout << "URL: "<< URL << "\n";
+        //std::cout << "URL: "<< URL << "\n";
         _init();
     }
 
@@ -119,13 +119,13 @@ namespace request{
             }
             this->URL.append(adding.str());
         }
-        std::cout << "URL: "<< URL << "\n";
+        //std::cout << "URL: "<< URL << "\n";
         _init();
     }
 
     Request::Request(CURL* handle, string URL,
             map<string, string>& MapHeaders,
-            map<string, string>& MapCookies, stringstream* buffer, bool isPost):
+            map<string, string>& MapCookies, stringstream* responce, bool isPost):
         handle(handle),
         responce(responce),
         metadata({std::ref(MapHeaders), std::ref(MapCookies)}),
@@ -141,6 +141,7 @@ namespace request{
         curl_easy_setopt(handle, CURLOPT_URL, URL.c_str());
         curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(handle, CURLOPT_DEFAULT_PROTOCOL, "https");
+
 #ifdef DEBUG
         //curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
 #endif
@@ -189,8 +190,10 @@ namespace request{
         //std::cout << responce->str();
         std::cout << "End Headers\n\n";
     #endif
-        some=responce->str();
-        data=some.c_str();
+        if (responce != nullptr){
+            some=responce->str();
+            data=some.c_str();
+        }
 
         if (!responce->str().empty() && Metod=="POST"){
             curl_easy_setopt(handle, CURLOPT_POSTFIELDS, data);
@@ -235,14 +238,15 @@ namespace request{
         std::cout << "End Headers\n\n";
 #endif
         str="";
+
         int res=curl_easy_perform(handle);
         double secs;
         curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res);
         curl_easy_getinfo(handle, CURLINFO_TOTAL_TIME, &secs);
-        std::cout << "Time " << secs << "-s\n";
+        //std::cout << "Time " << secs << "-s\n"; std::cout.flush();
         if (res==302){map<string,string> t; std::cout<<"Redirect to " << metadata.second["Location"] << "\n"; return Request(handle, metadata.first["Location"], t, metadata.first, metadata.second, responce, this->Metod).exec();};
 
-        if ((request::RepitRequestInBad && res!=200) || (request::TimeLimited && Request_count_max_ms-secs*1000<Request_count_max_ms*0.01)){
+        if ((request::Request::RepitRequestInBad && res!=200) || (request::Request::TimeLimited && Request_count_max_ms-secs*1000<Request_count_max_ms*0.01)){
             std::cout << res << " Repeat Request\n";
 
             if ((secs<500 && res!=200)){ std::ofstream ou("log.txt"); ou << str; ou.close(); std::this_thread::sleep_for(std::chrono::seconds(10));}
@@ -252,6 +256,7 @@ namespace request{
             }
             if (res==400){
                 std::cout << "Some 400 code\n";
+                /*
                 string finding=string("{\"message\":\"checkpoint_required\",\"checkpoint_url\":\"");
                 if (str.size() > finding.length() && str.substr(0, finding.length())==finding){
                     string checkpoint_link=str.substr(finding.length());
@@ -278,6 +283,7 @@ namespace request{
                 }else{
                     std::cout << "I have a problem 1\n " << str.substr(0, finding.length()); std::cout.flush(); std::cin >> finding;
                 }
+                */
             }
             return exec();
         }

@@ -15,14 +15,17 @@ using std::pair;
 
 namespace request{
 
-    bool TimeLimited=true;
-    bool RepitRequestInBad=true;
-
-    static uint Request_count_max_ms=20000;
 
     class Request
     {
     public:
+
+
+        inline static bool TimeLimited=true;
+        inline static bool RepitRequestInBad=true;
+
+        inline static uint Request_count_max_ms=20000;
+
         string URL;
         Request(CURL* , string ,
                 map<string, string>& ,
