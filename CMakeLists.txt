@@ -17,7 +17,7 @@ set(PROJECT_VERSION 1.1)
 set(CURL_USE_STATIC_LIBS ON)
 
 find_package(CURL REQUIRED COMPONENTS HTTP HTTPS)
-
+find_package(fmt)
 
 
 # Добавляем сборку статической библиотеки
@@ -39,7 +39,8 @@ target_include_directories(${PROJECT_NAME}_static
 
 target_link_libraries(${PROJECT_NAME}_static
     PRIVATE
-        CURL::libcurl_static
+	fmt::fmt
+        CURL::libcurl
         -static-libgcc -static-libstdc++
 )
 
@@ -62,7 +63,8 @@ target_include_directories(${PROJECT_NAME}_shared
 
 target_link_libraries(${PROJECT_NAME}_shared
     PRIVATE
-        CURL::libcurl_shared
+	fmt::fmt
+        CURL::libcurl
         -static-libgcc -static-libstdc++
 )
 

@@ -159,7 +159,7 @@ namespace request{
             cookies << now.first << "=" << now.second << "; ";
         }
         if (cookies.str().length())
-        headers = curl_slist_append(headers, std::format("Cookie: {}", cookies.str().substr(0, cookies.str().length()-2)).c_str());
+        headers = curl_slist_append(headers, format("Cookie: {}", cookies.str().substr(0, cookies.str().length()-2)).c_str());
 
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
         curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, string_write);
@@ -217,7 +217,7 @@ namespace request{
             cookies << now.first << "=" << now.second << "; ";
         }
         if (cookies.str().length())
-            headers = curl_slist_append(headers, std::format("Cookie: {}", cookies.str().substr(0, cookies.str().length()-2)).c_str());
+            headers = curl_slist_append(headers, format("Cookie: {}", cookies.str().substr(0, cookies.str().length()-2)).c_str());
 
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
         curl_easy_setopt(handle, CURLOPT_HEADERDATA, &metadata);

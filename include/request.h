@@ -4,7 +4,7 @@
 #include <curl/curl.h>
 #include <map>
 #include <string>
-#include <format>
+#include <fmt/core.h>
 #include <bits/stdc++.h>
 #include <atomic>
 
@@ -12,6 +12,7 @@ using std::map;
 using std::string;
 using std::stringstream;
 using std::pair;
+using fmt::format;
 
 namespace request{
 
