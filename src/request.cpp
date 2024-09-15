@@ -166,7 +166,9 @@ namespace request{
         curl_easy_setopt(handle, CURLOPT_WRITEDATA, &str);
         curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_write);
         curl_easy_setopt(handle, CURLOPT_HEADERDATA, &metadata);
+
         curl_easy_setopt(handle, CURLOPT_AUTOREFERER, 1L);
+        request_ans_produce.push_back(redirect);
 
         if (metadata.first.find("User-Agent")!=metadata.first.end())
             curl_easy_setopt(handle, CURLOPT_USERAGENT, (metadata.first)["User-Agent"].c_str());
@@ -199,10 +201,14 @@ namespace request{
             curl_easy_setopt(handle, CURLOPT_POSTFIELDS, data);
         }
         //curl_easy_setopt(handle, CURLOPT_TCP_KEEPALIVE, Request_count_max_ms);
-        if (TimeLimited)
+        if (TimeLimited){
             curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, Request_count_max_ms);
-        else
+            request_ans_produce.push_back(time_limit);
+        }else
             curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, -1);
+        request_ans_produce.insert(request_ans_produce.end(), auto_producers_all.begin(), auto_producers_all.end());
+        request_ans_produce.push_back(good);
+
     }
 
     Request& Request::exec(map<string, string>& MapHeaders, map<string, string>& MapCookies){
@@ -238,55 +244,39 @@ namespace request{
         std::cout << "End Headers\n\n";
 #endif
         str="";
+        if (request_ans_produce.back()!=just_repit_in_wrong && request::Request::RepitRequestInBad){
+            request_ans_produce.push_back(just_repit_in_wrong);
+        }
+
 
         int res=curl_easy_perform(handle);
         double secs;
         curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &res);
+
+        code=res;
+#ifdef DEBUG_STATUS
+        std::cout << res << " CODE\n";
+#endif
         curl_easy_getinfo(handle, CURLINFO_TOTAL_TIME, &secs);
+        this->secs=secs;
         //std::cout << "Time " << secs << "-s\n"; std::cout.flush();
-        if (res==302){map<string,string> t; std::cout<<"Redirect to " << metadata.second["Location"] << "\n"; return Request(handle, metadata.first["Location"], t, metadata.first, metadata.second, responce, this->Metod).exec();};
-
-        if ((request::Request::RepitRequestInBad && res!=200) || (request::Request::TimeLimited && Request_count_max_ms-secs*1000<Request_count_max_ms*0.01)){
-            std::cout << res << " Repeat Request\n";
-
-            if ((secs<500 && res!=200)){ std::ofstream ou("log.txt"); ou << str; ou.close(); std::this_thread::sleep_for(std::chrono::seconds(10));}
-            if (res==502){
-                std::cout << format("URL: {}\nBODY: {}\n", URL, responce->str());
-                throw "502";
+        uint counter=0;
+#ifdef DEBUG_STATUS
+            std::cout << request_ans_produce.size() << " - count of producers\n";
+#endif
+        for (auto producer: request_ans_produce){
+#ifdef DEBUG_STATUS
+            std::cout << ++counter << "\n";
+#endif
+            if (producer(this)){
+                if(responce!=nullptr) *responce=stringstream(str);
+                if (headers!=NULL) curl_slist_free_all(headers);
+                return *this;
             }
-            if (res==400){
-                std::cout << "Some 400 code\n";
-                /*
-                string finding=string("{\"message\":\"checkpoint_required\",\"checkpoint_url\":\"");
-                if (str.size() > finding.length() && str.substr(0, finding.length())==finding){
-                    string checkpoint_link=str.substr(finding.length());
-                    finding="\",\"lock\":false,\"flow_render_type\":0,\"status\":\"fail\"}";
-                    if (checkpoint_link.substr(checkpoint_link.length()-finding.length(), finding.length())==finding){
-                        checkpoint_link=checkpoint_link.substr(0, checkpoint_link.length()-finding.length());
-                        std::cout<<checkpoint_link << "\n"; std::cout.flush();
-                        map<string,string> t;
-                        Request(handle, checkpoint_link, t, metadata.first, metadata.second, responce, string("POST")).exec();
-                        std::cout << "Checkpoint complete\n"; std::cout.flush();
-                        return exec();
-                    }else{
-
-                        finding="\",\"lock\":true,\"flow_render_type\":0,\"status\":\"fail\"}";
-                        if (checkpoint_link.substr(checkpoint_link.length()-finding.length(), finding.length())==finding){
-                            checkpoint_link=checkpoint_link.substr(0, checkpoint_link.length()-finding.length());
-                            std::cout<<checkpoint_link << "\n"; std::cout.flush();
-                            //Request(handle, checkpoint_link, metadata.first, metadata.second, responce, true).exec();
-                            std::cout << "Checkpoint complete\n"; std::cout.flush();
-                            return exec();
-                        }else
-                            std::cout << "I have a problem 2"; std::cin >> finding;
-                    }
-                }else{
-                    std::cout << "I have a problem 1\n " << str.substr(0, finding.length()); std::cout.flush(); std::cin >> finding;
-                }
-                */
-            }
-            return exec();
         }
+        std::cout << res << "undefined_behavior\n";
+        std::ofstream ou("undefined_behavior.txt"); ou << str; ou.close();
+
 #ifdef DEBUG
         std::cout << res << "\n";
 #endif
@@ -305,6 +295,12 @@ namespace request{
     }
 
     const stringstream* Request::result(){return responce;}
+
+    const string Request::get_temp_responce(){return str;}
+
+    CURL* Request::get_curl_handle(){return this->handle;}
+
+    std::pair<map<string, string>&, map<string, string>&> Request::get_metadata(){return {this->metadata.first, this->metadata.second};}
 }
 
 //32 байта в пинг = 66мс
