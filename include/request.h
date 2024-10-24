@@ -24,12 +24,12 @@ namespace request{
         inline static bool TimeLimited=true;
         inline static bool RepitRequestInBad=true;
 
-        inline static uint Request_count_max_ms=20000;
+        inline static unsigned int Request_count_max_ms=20000;
 
         inline static std::vector<bool (*)(Request* )> auto_producers_all;
 
-        uint code=0;
-        uint secs=0;
+        unsigned int code=0;
+        unsigned int secs=0;
 
         std::vector<bool (*)(Request* )> request_ans_produce;
 

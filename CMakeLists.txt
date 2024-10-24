@@ -33,14 +33,16 @@ target_sources(${PROJECT_NAME}_static
 target_include_directories(${PROJECT_NAME}_static
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CURL_INCLUDE_DIR}
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 target_link_libraries(${PROJECT_NAME}_static
-    PRIVATE
+    PUBLIC
         CURL::libcurl_static
+    PRIVATE
         -static-libgcc -static-libstdc++
 )
 
@@ -56,14 +58,16 @@ target_sources(${PROJECT_NAME}_shared
 target_include_directories(${PROJECT_NAME}_shared
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CURL_INCLUDE_DIR}
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 target_link_libraries(${PROJECT_NAME}_shared
+    PUBLIC
+        CURL::libcurl_shared    
     PRIVATE
-        CURL::libcurl_shared
         -static-libgcc -static-libstdc++
 )
 
@@ -74,8 +78,10 @@ set(public_headers
 )
 
 set_target_properties(${PROJECT_NAME}_static PROPERTIES PUBLIC_HEADER "${public_headers}")
+set_target_properties(${PROJECT_NAME}_static PROPERTIES DEBUG_POSTFIX "d")
 
 set_target_properties(${PROJECT_NAME}_shared PROPERTIES PUBLIC_HEADER "${public_headers}")
+set_target_properties(${PROJECT_NAME}_shared PROPERTIES DEBUG_POSTFIX "d")
 
 set_property(TARGET ${PROJECT_NAME}_static PROPERTY POSITION_INDEPENDENT_CODE ON)
 
@@ -84,9 +90,11 @@ include(GNUInstallDirs)
 # Устанавливаем цели для установки
 install(TARGETS ${PROJECT_NAME}_static ${PROJECT_NAME}_shared
     EXPORT ${PROJECT_NAME}Targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
+    #RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    #ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    #LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 install(EXPORT ${PROJECT_NAME}Targets

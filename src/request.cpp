@@ -260,7 +260,7 @@ namespace request{
         curl_easy_getinfo(handle, CURLINFO_TOTAL_TIME, &secs);
         this->secs=secs;
         //std::cout << "Time " << secs << "-s\n"; std::cout.flush();
-        uint counter=0;
+        unsigned int counter=0;
 #ifdef DEBUG_STATUS
             std::cout << request_ans_produce.size() << " - count of producers\n";
 #endif
