@@ -176,9 +176,11 @@ namespace request{
         //curl_easy_setopt(handle, CURLOPT_MAXREDIRS , 100L);
         //curl_easy_setopt(handle, CURLOPT_COOKIEFILE, "")
         //curl_easy_setopt(handle, CURLOPT_READDATA, )
-        //curl_easy_setopt(handle, CURLOPT_HTTP_VERSION, (long)CURL_HTTP_VERSION_2TLS);
+        curl_easy_setopt(handle, CURLOPT_HTTP_VERSION, (long)CURL_HTTP_VERSION_2TLS);
         //curl_easy_setopt(handle, CURLOPT_FTP_SKIP_PASV_IP, 1L);
         curl_easy_setopt(handle, CURLOPT_TCP_KEEPALIVE, 1L);
+        //curl_easy_setopt(handle, CURLOPT_CAINFO, "cacert.pem");
+
 
 
     #ifdef DEBUG

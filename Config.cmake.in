@@ -1,6 +1,10 @@
 @PACKAGE_INIT@
 include(CMakeFindDependencyMacro)
 
+if (WIN32)
+    set(NetworkRequestLib_DLL "@ALL_DLL_FILES@")
+endif()
+
 find_dependency(CURL REQUIRED)
 
 include("${CMAKE_CURRENT_LIST_DIR}/NetworkRequestLibTargets.cmake")

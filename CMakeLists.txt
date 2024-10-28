@@ -8,7 +8,7 @@ else()
     message(STATUS "This project is a top-level one")
 endif()
 
-#add_compile_definitions(DEBUG)
+add_compile_definitions(DEBUG)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -46,6 +46,8 @@ target_link_libraries(${PROJECT_NAME}_static
         -static-libgcc -static-libstdc++
 )
 
+
+
 # Добавляем сборку динамической библиотеки
 add_library(${PROJECT_NAME}_shared SHARED)
 
@@ -67,9 +69,17 @@ target_include_directories(${PROJECT_NAME}_shared
 target_link_libraries(${PROJECT_NAME}_shared
     PUBLIC
         CURL::libcurl_shared    
-    PRIVATE
-        -static-libgcc -static-libstdc++
+    #PRIVATE
+        #-static-libgcc -static-libstdc++
 )
+
+#[[
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
+#]]
 
 # Устанавливаем заголовочные файлы
 set(public_headers
@@ -84,6 +94,31 @@ set_target_properties(${PROJECT_NAME}_shared PROPERTIES PUBLIC_HEADER "${public_
 set_target_properties(${PROJECT_NAME}_shared PROPERTIES DEBUG_POSTFIX "d")
 
 set_property(TARGET ${PROJECT_NAME}_static PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+if(WIN32)
+    
+    set(DLL_DIRS "")
+    foreach(I_DIR ${PC_CURL_INCLUDE_DIRS})
+        list(APPEND DLL_DIRS "${I_DIR}/../bin")
+    endforeach()
+    list(APPEND DLL_DIRS  "${CMAKE_INSTALL_PREFIX}/bin")
+    message(STATUS "dlls -  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}")
+
+    # Переменная для хранения всех .dll файлов
+    set(ALL_DLL_FILES "")
+
+    # Проходим по каждой директории из списка
+    foreach(DLL_DIR ${DLL_DIRS})
+        # Получаем список всех .dll файлов в текущей директории
+        file(GLOB DLL_FILES "${DLL_DIR}/*.dll")
+
+        # Добавляем найденные .dll файлы в общую переменную
+        list(APPEND ALL_DLL_FILES ${DLL_FILES})
+    endforeach()
+    
+    message(STATUS "DLLS -  ${ALL_DLL_FILES}")
+
+endif()
 
 include(GNUInstallDirs)
 
