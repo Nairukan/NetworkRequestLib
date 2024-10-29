@@ -95,6 +95,28 @@ set_target_properties(${PROJECT_NAME}_shared PROPERTIES DEBUG_POSTFIX "d")
 
 set_property(TARGET ${PROJECT_NAME}_static PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+
+
+include(GNUInstallDirs)
+
+# Устанавливаем цели для установки
+install(TARGETS ${PROJECT_NAME}_static ${PROJECT_NAME}_shared
+    EXPORT ${PROJECT_NAME}Targets
+    #RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    #ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    #LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(EXPORT ${PROJECT_NAME}Targets
+    FILE ${PROJECT_NAME}Targets.cmake
+    NAMESPACE ${PROJECT_NAME}::
+    DESTINATION cmake
+)
+
+include(CMakePackageConfigHelpers)
+
 if(WIN32)
     
     set(DLL_DIRS "")
@@ -119,26 +141,6 @@ if(WIN32)
     message(STATUS "DLLS -  ${ALL_DLL_FILES}")
 
 endif()
-
-include(GNUInstallDirs)
-
-# Устанавливаем цели для установки
-install(TARGETS ${PROJECT_NAME}_static ${PROJECT_NAME}_shared
-    EXPORT ${PROJECT_NAME}Targets
-    #RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    #ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    #LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-
-install(EXPORT ${PROJECT_NAME}Targets
-    FILE ${PROJECT_NAME}Targets.cmake
-    NAMESPACE ${PROJECT_NAME}::
-    DESTINATION cmake
-)
-
-include(CMakePackageConfigHelpers)
 
 # Генерируем файл конфигурации
 write_basic_package_version_file(
