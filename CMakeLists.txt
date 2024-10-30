@@ -8,7 +8,7 @@ else()
     message(STATUS "This project is a top-level one")
 endif()
 
-add_compile_definitions(DEBUG)
+#add_compile_definitions(DEBUG)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
