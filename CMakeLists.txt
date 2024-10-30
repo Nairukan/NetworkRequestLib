@@ -95,8 +95,6 @@ set_target_properties(${PROJECT_NAME}_shared PROPERTIES DEBUG_POSTFIX "d")
 
 set_property(TARGET ${PROJECT_NAME}_static PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-
-
 include(GNUInstallDirs)
 
 # Устанавливаем цели для установки
@@ -115,19 +113,23 @@ install(EXPORT ${PROJECT_NAME}Targets
     DESTINATION cmake
 )
 
-include(CMakePackageConfigHelpers)
-
 if(WIN32)
     
     set(DLL_DIRS "")
     foreach(I_DIR ${PC_CURL_INCLUDE_DIRS})
         list(APPEND DLL_DIRS "${I_DIR}/../bin")
     endforeach()
-    list(APPEND DLL_DIRS  "${CMAKE_INSTALL_PREFIX}/bin")
-    message(STATUS "dlls -  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}")
+    set(GENERATED_DLL "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${CMAKE_SHARED_MODULE_PREFIX}${PROJECT_NAME}_shared")
+    if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+        set (GENERATED_DLL_DEBUG "${GENERATED_DLL}d")
+    endif()
+    set (GENERATED_DLL_DEBUG "${GENERATED_DLL_DEBUG}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    set (GENERATED_DLL_RELEASE "${GENERATED_DLL}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    #list(APPEND DLL_DIRS  "")
+    #message(STATUS "dlls -  ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}")
 
     # Переменная для хранения всех .dll файлов
-    set(ALL_DLL_FILES "")
+    set(ALL_DLL_FILES_DEBUG "")
 
     # Проходим по каждой директории из списка
     foreach(DLL_DIR ${DLL_DIRS})
@@ -135,12 +137,16 @@ if(WIN32)
         file(GLOB DLL_FILES "${DLL_DIR}/*.dll")
 
         # Добавляем найденные .dll файлы в общую переменную
-        list(APPEND ALL_DLL_FILES ${DLL_FILES})
+        list(APPEND ALL_DLL_FILES_DEBUG ${DLL_FILES})
     endforeach()
-    
-    message(STATUS "DLLS -  ${ALL_DLL_FILES}")
+    set(ALL_DLL_FILES_RELEASE ${ALL_DLL_FILES_DEBUG})
+    list(APPEND ALL_DLL_FILES_DEBUG ${GENERATED_DLL_DEBUG})
+    list(APPEND ALL_DLL_FILES_RELEASE ${GENERATED_DLL_RELEASE})
+    #message(STATUS "DLLS -  ${ALL_DLL_FILES}")
 
 endif()
+
+include(CMakePackageConfigHelpers)
 
 # Генерируем файл конфигурации
 write_basic_package_version_file(

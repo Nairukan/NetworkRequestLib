@@ -2,7 +2,8 @@
 include(CMakeFindDependencyMacro)
 
 if (WIN32)
-    set(NetworkRequestLib_DLL "@ALL_DLL_FILES@")
+    set(NetworkRequestLib_DLL_DEBUG "@ALL_DLL_FILES_DEBUG@")
+    set(NetworkRequestLib_DLL_RELEASE "@ALL_DLL_FILES_RELEASE@")
     set(NetworkRequestLib_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_INCLUDEDIR@") 
     set(NetworkRequestLib_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_INCLUDEDIR@") 
 endif()
